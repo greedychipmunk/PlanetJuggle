@@ -1,0 +1,22 @@
+settings =
+{
+    orientation =
+    {
+        default = "portrait",
+        supported =
+        {
+            "portrait",
+        }
+    },
+    
+    
+    iphone =
+    {
+        
+    },
+    
+    android = 
+    {
+    
+    }
+}
