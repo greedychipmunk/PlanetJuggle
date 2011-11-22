@@ -1,21 +1,18 @@
 local physics = require "physics" 
-local gameUI = require "scripts/gameUI"
-local CSL = require "scripts/crawlspaceLib"
+local gameUI = require "gameUI"
+local CSL = require "crawlspaceLib"
 
 CSL.listFeatures()
 
 system.activate( "multitouch" )
 physics.start()
 
-local sky = display.newImage( "img/bkg_clouds.png" )
-sky.x = 160; sky.y = 240
+local sky = display.newImage( "img/space-bg1320x1320.png" )
+--sky.x = 300
+--sky.y = 300
 
-local ground = display.newImage( "img/ground.png" )
-ground.x = 160; ground.y = 545
 
 display.setStatusBar( display.HiddenStatusBar )
-
-physics.addBody( ground, "static", { friction=0.5, bounce=0.3 } )
 
 score = 0
 scoreText = display.newText( score, display.viewableContentWidth - 30, 20, native.systemFont, 20 )
@@ -23,32 +20,35 @@ scoreText = display.newText( score, display.viewableContentWidth - 30, 20, nativ
 scoreText:setTextColor(255, 255, 255)
 
 startView = {}
-startText = display.newText("Tap to Start", display.viewableContentWidth / 2, display.viewableContentHeight / 2, native.systemFont, 26)
+startText = display.newText( "Tap to Start", display.viewableContentWidth / 2, display.viewableContentHeight / 2, native.systemFont, 26 )
 
 startText:setTextColor(255, 255, 255)
 gameOver = false
-crateLayer = display.newGroup()
-local function addCrate( event )
+planetLayer = display.newGroup()
+local function addPlanet( event )
 	if( not gameOver ) then
-		crate = display.newImage( "img/planet80x80.png" )
-		crate.x = 180; crate.y = -50; crate.rotation = 5
+		planet = display.newImage( "img/planet80x80.png" )
+		planet.x = 180; planet.y = -50; planet.rotation = 5
 		
-		physics.addBody( crate, { density=3.0, friction=0.5, bounce=0.3 } )
+		physics.addBody( planet, { density=3.0, friction=0.5, bounce=0.3 } )
 		
-		crate:addEventListener( "touch", gameUI.dragBody )
-		crateLayer:insert( crate )
-		print( "post insert: " .. crateLayer.numChildren )
+		planet:addEventListener( "touch", gameUI.dragBody )
+		planetLayer:insert( planet )
 		scoreText:toFront()
 	end
 end
 
-local leftWallRect = display.newRect( 0, -50000, 1, 50000 + 480 )
-leftWallRect:setFillColor( 255, 255, 255, 100 )
+local leftWallRect = display.newRect( 0, -50000, 1, 60000 )
+leftWallRect:setFillColor( 0, 0, 0, 100 )
 physics.addBody( leftWallRect, "static", { density=1, friction=.5, bounce=0.3 } )
 
-local rightWallRect = display.newRect( display.viewableContentWidth - 1, -50000, 1, 50000 + 480 )
-rightWallRect:setFillColor( 255, 255, 255, 100 )
+local rightWallRect = display.newRect( display.viewableContentWidth, -50000, 1, 60000 )
+rightWallRect:setFillColor( 0, 0, 0, 100 )
 physics.addBody( rightWallRect, "static", { density=1, friction=.5, bounce=0.3 } )
+
+local groundRect = display.newRect( 0, display.viewableContentHeight, display.stageWidth, 1 )
+groundRect:setFillColor( 0, 0, 0, 100 )
+physics.addBody( groundRect, "static", { density = 1, friction = .5 } )
 
 local function ptInside( obj, x, y )
 	local inside = false
@@ -88,18 +88,18 @@ local function buttonTouched( e )
 end
 
 local function replayAction()
-	print( "REPLAY" )
+	gameUI.score = 0
+	scoreText.text = 0
 	gameOver = false
-	crateLayer.isVisible = true
-	addCrate()
-	crateTimer = timer.performWithDelay( 10000, addCrate, 99 )
-	ground:addEventListener( 'collision', onGroundCollision )
+	planetLayer.isVisible = true
+	addPlanet()
+	planetTimer = timer.performWithDelay( 10000, addPlanet, 99 )
+	groundRect:addEventListener( 'collision', onGroundCollision )
 	buttonReplay.isVisible = false
 	buttonMenu.isVisible = false
 end
 
 local function menuAction()
-	print( "MENU" )
 	os.exit()
 end
 
@@ -121,25 +121,20 @@ buttonMenu.isVisible = false
 
 local function startGame ( event )
 	startText.text = ""
-	addCrate()
-	crateTimer = timer.performWithDelay( 10000, addCrate, 99 )
+	addPlanet()
+	planetTimer = timer.performWithDelay( 10000, addPlanet, 99 )
 	sky:removeEventListener( 'tap', startGame )
 end
 
 local function cleanGroups ( curGroup, level )
-    print( "level: " .. level )
     if curGroup.numChildren then
-    	print( "if curGroup.numChildren: " .. curGroup.numChildren )
         while curGroup.numChildren > 0 do
-        		print( "while: " .. curGroup.numChildren )
                 cleanGroups ( curGroup[curGroup.numChildren], level+1 )
         end
         if level > 0 then
-        		print( "level > 0" )
                 curGroup:removeSelf()
         end
         else
-        		print( "curGroup:removeSelf()" )
         		curGroup:removeSelf()
                 curGroup = nil
         return
@@ -147,13 +142,13 @@ local function cleanGroups ( curGroup, level )
 end
 
 function onGroundCollision( self, event )
-	timer.cancel( crateTimer )
+	timer.cancel( planetTimer )
 	gameOver = true
 	buttonReplay.isVisible = true
 	buttonMenu.isVisible = true
-	cleanGroups( crateLayer, 0 )
-	ground:removeEventListener( 'collision', onGroundCollision )
+	cleanGroups( planetLayer, 0 )
+	groundRect:removeEventListener( 'collision', onGroundCollision )
 end
 
 sky:addEventListener( 'tap', startGame )
-ground:addEventListener( 'collision', onGroundCollision )
+groundRect:addEventListener( 'collision', onGroundCollision )
